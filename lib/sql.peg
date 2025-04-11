@@ -3,10 +3,11 @@ grammar SQL
 message             <- _* query _* ';' _* %mk_message
 _                   <- [ \t\n\r]
 
-keyword             <- (`CREATE` / `DROP` / `TABLE` / `IF` / `NOT` / `EXISTS` /
+keyword             <- (`CREATE` / `DROP` / `TABLE` / `IF` / `EXISTS` /
                         `INSERT` / `INTO` / `VALUES` /
                         `SELECT` / `AS` / `FROM` /
-                        `TRUE` / `FALSE` / `NULL`)
+                        `TRUE` / `FALSE` / `NULL` /
+                        `AND` / `OR` / `NOT`)
                        ![A-Za-z0-9_]
 
 query               <- create_table_query
@@ -20,7 +21,7 @@ create_table_query  <- `CREATE` _+ `TABLE` _+ field_id
 
 field_def_list      <- field_def (_* ',' _* field_def)* %mk_field_def_list
 field_def           <- field_id _+ field_type %mk_field_def
-field_id            <- !keyword [A-Za-z] [A-Za-z0-9_]*
+field_id            <- !keyword [A-Za-z] [A-Za-z0-9_]* %mk_field_id
 field_type          <- `BOOLEAN` / `INTEGER`
 
 drop_table_query    <- `DROP` _+ `TABLE` _+
@@ -33,7 +34,7 @@ insert_query        <- `INSERT` _+ `INTO` _+ field_id _+
                        %mk_insert
 
 insert_tuples       <- insert_values (_* ',' _* insert_values)* %mk_insert_tuples
-insert_values       <- '(' _* expr (_* ',' _* expr)* _* ')' %mk_insert_values
+insert_values       <- '(' _* term (_* ',' _* term)* _* ')' %mk_insert_values
 
 select_query        <- `SELECT` select_list
                        (_+ `FROM` _+ field_id)?
@@ -42,9 +43,25 @@ select_query        <- `SELECT` select_list
 select_list         <- _+ select_expr (_* ',' _* select_expr)* %mk_select_list
                      / _* %mk_empty_list
 
-select_expr         <- select_projection (_+ `AS` _+ field_id)? %mk_select_expr
-select_projection   <- field_id / expr
+select_expr         <- term (_+ `AS` _+ field_id)? %mk_select_expr
 
-expr                <- (boolean / integer)
+term                <- ('-' / `NOT`) _* term %mk_unary_term
+                     / term_lhs _* bin_op _* term %mk_bin_op_term
+                     / term_lhs
+
+term_lhs            <- '(' _* term _* ')' %mk_paren_term
+                     / function_term
+                     / field_id
+                     / literal
+
+function_term       <- function_name '(' _* function_args _* ')' %mk_fn_term
+function_name       <- `ABS` / `MOD`
+function_args       <- term (_* ',' _* term)* %mk_fn_args
+
+bin_op              <- '+' / '-' / '*' / '/'
+                     / '<>' / '<=' / '>=' / '<' / '>' / '='
+                     / `AND` / `OR`
+
+literal             <- boolean / integer
 boolean             <- `TRUE` %mk_bool / `FALSE` %mk_bool
 integer             <- '-'? ('0' / [1-9] [0-9]*) %mk_int
