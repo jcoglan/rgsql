@@ -2,16 +2,19 @@
 
 const net = require('net')
 const split = require('split2')
+const Server = require('../lib/server')
 
 const PORT = 3003
 
-let server = net.createServer(async (sock) => {
+let server = new Server()
+
+let tcp = net.createServer(async (sock) => {
   let requests = sock.pipe(split('\0'))
 
   for await (let msg of requests) {
-    let reply = Buffer.from('hello\0')
-    sock.write(reply)
+    let reply = await server.handle(msg)
+    sock.write(JSON.stringify(reply) + '\0')
   }
 })
 
-server.listen(PORT)
+tcp.listen(PORT)

@@ -1,0 +1,17 @@
+grammar SQL
+
+message       <- _* query _* ';' _* %mk_message
+query         <- select_query
+_             <- ' '
+column_name   <- [A-Za-z] [A-Za-z0-9_]*
+
+select_query  <- 'SELECT' select_list %mk_select
+
+select_list   <- _+ select_expr (_* ',' _* select_expr)* %mk_select_list
+               / _* %mk_empty_list
+
+select_expr   <- expr (_+ 'AS' _+ column_name)? %mk_expr
+
+expr          <- (boolean / integer)
+boolean       <- 'TRUE' %mk_bool / 'FALSE' %mk_bool
+integer       <- '-'? ('0' / [1-9] [0-9]*) %mk_int

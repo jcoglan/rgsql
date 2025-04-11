@@ -1,4 +1,5 @@
 .passed_tests
-server_output.log
-server_error.log
+lib/sql.js
 node_modules
+server_error.log
+server_output.log
