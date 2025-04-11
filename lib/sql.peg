@@ -1,44 +1,50 @@
 grammar SQL
 
 message             <- _* query _* ';' _* %mk_message
-_                   <- ' '
+_                   <- [ \t\n\r]
+
+keyword             <- (`CREATE` / `DROP` / `TABLE` / `IF` / `NOT` / `EXISTS` /
+                        `INSERT` / `INTO` / `VALUES` /
+                        `SELECT` / `AS` / `FROM` /
+                        `TRUE` / `FALSE` / `NULL`)
+                       ![A-Za-z0-9_]
 
 query               <- create_table_query
                      / drop_table_query
                      / insert_query
                      / select_query
 
-create_table_query  <- 'CREATE' _+ 'TABLE' _+ field_id
+create_table_query  <- `CREATE` _+ `TABLE` _+ field_id
                        _* '(' _* field_def_list _* ')'
                        %mk_create_table_query
 
 field_def_list      <- field_def (_* ',' _* field_def)* %mk_field_def_list
 field_def           <- field_id _+ field_type %mk_field_def
-field_id            <- [A-Za-z] [A-Za-z0-9_]*
-field_type          <- 'BOOLEAN' / 'INTEGER'
+field_id            <- !keyword [A-Za-z] [A-Za-z0-9_]*
+field_type          <- `BOOLEAN` / `INTEGER`
 
-drop_table_query    <- 'DROP' _+ 'TABLE' _+
-                       ('IF' _+ 'EXISTS' _+)?
+drop_table_query    <- `DROP` _+ `TABLE` _+
+                       (`IF` _+ `EXISTS` _+)?
                        field_id %mk_drop_table
 
-insert_query        <- 'INSERT' _+ 'INTO' _+ field_id _+
-                       'VALUES' _*
+insert_query        <- `INSERT` _+ `INTO` _+ field_id _+
+                       `VALUES` _*
                        insert_tuples
                        %mk_insert
 
 insert_tuples       <- insert_values (_* ',' _* insert_values)* %mk_insert_tuples
 insert_values       <- '(' _* expr (_* ',' _* expr)* _* ')' %mk_insert_values
 
-select_query        <- 'SELECT' select_list
-                       (_+ 'FROM' _+ field_id)?
+select_query        <- `SELECT` select_list
+                       (_+ `FROM` _+ field_id)?
                        %mk_select
 
 select_list         <- _+ select_expr (_* ',' _* select_expr)* %mk_select_list
                      / _* %mk_empty_list
 
-select_expr         <- select_projection (_+ 'AS' _+ field_id)? %mk_select_expr
-select_projection   <- expr / field_id
+select_expr         <- select_projection (_+ `AS` _+ field_id)? %mk_select_expr
+select_projection   <- field_id / expr
 
 expr                <- (boolean / integer)
-boolean             <- 'TRUE' %mk_bool / 'FALSE' %mk_bool
+boolean             <- `TRUE` %mk_bool / `FALSE` %mk_bool
 integer             <- '-'? ('0' / [1-9] [0-9]*) %mk_int
