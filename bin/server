@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+
+const net = require('net')
+const split = require('split2')
+
+const PORT = 3003
+
+let server = net.createServer(async (sock) => {
+  let requests = sock.pipe(split('\0'))
+
+  for await (let msg of requests) {
+    let reply = Buffer.from('hello\0')
+    sock.write(reply)
+  }
+})
+
+server.listen(PORT)
