@@ -21,13 +21,23 @@ drop_table_query    <- 'DROP' _+ 'TABLE' _+
                        ('IF' _+ 'EXISTS' _+)?
                        field_id %mk_drop_table
 
-select_query        <- 'SELECT' select_list %mk_select
+insert_query        <- 'INSERT' _+ 'INTO' _+ field_id _+
+                       'VALUES' _*
+                       insert_tuples
+                       %mk_insert
+
+insert_tuples       <- insert_values (_* ',' _* insert_values)* %mk_insert_tuples
+insert_values       <- '(' _* expr (_* ',' _* expr)* _* ')' %mk_insert_values
+
+select_query        <- 'SELECT' select_list
+                       (_+ 'FROM' _+ field_id)?
+                       %mk_select
 
 select_list         <- _+ select_expr (_* ',' _* select_expr)* %mk_select_list
                      / _* %mk_empty_list
 
 select_expr         <- select_projection (_+ 'AS' _+ field_id)? %mk_select_expr
-select_projection   <- expr
+select_projection   <- expr / field_id
 
 expr                <- (boolean / integer)
 boolean             <- 'TRUE' %mk_bool / 'FALSE' %mk_bool
